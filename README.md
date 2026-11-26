@@ -6,7 +6,7 @@ An internet browser for **BMW iDrive 7 and iDrive 8**, installed from the
 [MGU Store](https://github.com/robertnisipeanu/mgu-store). A real Chromium runs on the head unit, out of sight; the
 app shows its picture and sends it your touches.
 
-> **Beta 3 (1.1.0), experimental.** Unofficial: not affiliated with or endorsed by BMW or Google. Use it parked.
+> **Beta 3 (1.1.1), experimental.** Unofficial: not affiliated with or endorsed by BMW or Google. Use it parked.
 
 | | |
 |---|---|
@@ -39,6 +39,9 @@ New in Beta 3:
 - **English everywhere** in the app when the car is not set to German. (The phone remote's web page is still
   German.)
 - A logo, a start page and a calmer dark design.
+- **Open video sites on the start page** (1.1.1): Invidious (an open-source front end to YouTube; the tile opens
+  one public instance - if it is down, pick another from <https://instances.invidious.io/> and bookmark it),
+  PeerTube (through Sepia Search) and the Internet Archive's films, next to Wikipedia, DuckDuckGo and YouTube.
 
 Still true: video is shown as pictures of the page, so it will not be as smooth as an app made for video
 ([BeeMTube2](https://github.com/waliworld/iDrive8-RideTube) is that app for YouTube on iDrive 8). Netflix, Disney+
@@ -63,7 +66,7 @@ If it does not open a page, a photo of what the screen says is what helps.
 - **The service** is upstream's published 0.16.1 package with its native parts byte for byte; the JavaScript files
   that differ from upstream's are the ones in this repository's [src/](src/) and [runtime/](runtime/) (the release
   tool lists them as it builds): the lighter video and picture, any zoom, the English texts, and how the app's uid is
-  found on a unit where MainApp keeps no `uids.txt`. It carries Beem-Net's own version, 1.1.0.
+  found on a unit where MainApp keeps no `uids.txt`. It carries Beem-Net's own version, 1.1.1.
 - **The engine** is upstream's published Chromium package, byte for byte.
 - Both carry `"mguHmi": ["ID7", "ID8"]`: upstream's say iDrive 7 only, which the installer refuses on iDrive 8.
 

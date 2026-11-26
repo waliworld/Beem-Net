@@ -1,6 +1,6 @@
 {
   "name": "mgu-native-browser",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "Beem-Net: the iDrive 8 version of MGU Browser (a native UI and a separate Chromium backend)",
   "scripts": {

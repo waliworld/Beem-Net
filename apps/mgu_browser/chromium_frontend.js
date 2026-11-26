@@ -498,7 +498,10 @@ mgu.run({async start(ctx){
             c.text('Waehle oben die Adressleiste. Drehen waehlt, Druecken bestaetigt.',65,319,19,C.muted);
             if(listTab==='frequent'){
                 c.text('SCHNELLZUGRIFF',65,380,15,C.muted);
-                [['Wikipedia','https://www.wikipedia.org/'],['DuckDuckGo','https://duckduckgo.com/'],['YouTube','https://www.youtube.com/']].forEach((i,n)=>button(c,64+n*340,402,320,62,i[0],()=>navigate(i[1]),'suggestion-'+n));
+                // (the open video sites are lighter pages than YouTube's own: Invidious is an open-source front end to
+                // YouTube - a public instance, they come and go; PeerTube and the Internet Archive are free video)
+                const quick=[['Wikipedia','https://www.wikipedia.org/'],['DuckDuckGo','https://duckduckgo.com/'],['YouTube','https://www.youtube.com/'],['Invidious','https://yt.chocolatemoo53.com/'],['PeerTube','https://sepiasearch.org/'],['Internet Archive','https://archive.org/details/movies']],qw=Math.floor((W-128-(quick.length-1)*16)/quick.length);
+                quick.forEach((i,n)=>button(c,64+n*(qw+16),402,qw,62,i[0],()=>navigate(i[1]),'suggestion-'+n));
             }
             return;
         }
