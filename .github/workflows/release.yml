@@ -62,9 +62,9 @@ jobs:
           gh release download catalog --repo "$GITHUB_REPOSITORY"
           grep -q '"version": "1.0.0"' catalog.json || { echo "the catalog is not Beta 2 (1.0.0): nothing kept"; exit 0; }
           sed -i 's#/releases/download/catalog/#/releases/download/beta2/#g' catalog.json
-          gh release create beta2 --repo "$GITHUB_REPOSITORY" --target 5a3374746dd20242e3a5c3f21e417b0f701fde5f --latest=false \
+          gh release create beta2 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
             --title "Beem-Net 1.0.0 - Beta 2 (kept to go back to)" \
-            --notes "The release before Beta 3, kept unchanged. To use it, the MGU Store would need this release as the catalog; ask before going back." ./*
+            --notes "The packages of the release before Beta 3, kept unchanged (their source is commit 5a33747; this tag only holds the files). To use it, the MGU Store would need this release as the catalog; ask before going back." ./*
 
       - name: Publish it as the release "catalog"
         env:
