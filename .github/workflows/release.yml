@@ -1,0 +1,68 @@
+name: Release (MGU Store catalog, iDrive 8)
+
+# Publishes the release tagged "catalog": catalog.json and the three packages the MGU Store installs on iDrive 8.
+# In the Store, add the source  waliworld/Beem-Net  and choose Releases.
+# Runs when main changes in what goes into the release, or by hand (Actions, Run workflow).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'src/**'
+      - 'runtime/**'
+      - 'tools/**'
+      - 'assets/**'
+      - 'test/id8/**'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: catalog-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: The public app kit, at the commit tools/build_store.py pins
+        run: |
+          commit=$(python3 -c "import re;print(re.search(r\"KIT_COMMIT = '([0-9a-f]{40})'\", open('tools/build_store.py').read()).group(1))")
+          git init -q "$RUNNER_TEMP/kit"
+          git -C "$RUNNER_TEMP/kit" fetch -q --depth 1 https://github.com/cauliflowermossgrape/idrive7-apps.git "$commit"
+          git -C "$RUNNER_TEMP/kit" checkout -q FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/kit" rev-parse HEAD)" = "$commit"
+
+      - name: Tests (upstream's, and the iDrive 8 ones)
+        run: |
+          node --test test/*.test.js test/id8/*.test.js
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/stage"
+          MGU_KIT_DIR="$RUNNER_TEMP/kit" MGU_OUT="$RUNNER_TEMP/out" python3 tools/build_store.py --app mgu_browser \
+            --version "$(python3 -c "import json;print(json.load(open('apps/mgu_browser/app.json'))['version'])")" \
+            --source apps/mgu_browser --release-package --keep-stage "$RUNNER_TEMP/stage"
+          node test/id8/layout_smoke.js "$RUNNER_TEMP/stage"
+
+      - name: Build the release (dist/release/)
+        run: python3 tools/id8_release.py --kit "$RUNNER_TEMP/kit"
+
+      - name: Publish it as the release "catalog"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Beem-Net for iDrive 8 - Beta 1 (MGU Store catalog)"
+          notes="Experimental. An internet browser for BMW iDrive 8, installed from the MGU Store: add the source waliworld/Beem-Net and choose Releases. Beta 1 is for a first try on a car: the page's picture and touch. Sound and smooth video are not there on iDrive 8 yet. Not confirmed on a car. Based on MGU Browser by Leon Pllana (MIT)."
+          if gh release view catalog >/dev/null 2>&1; then
+            gh release edit catalog --title "$title" --notes "$notes" --latest
+          else
+            gh release create catalog --target "$GITHUB_SHA" --title "$title" --notes "$notes" --latest
+          fi
+          gh release upload catalog dist/release/* --clobber
+          ls -l dist/release
