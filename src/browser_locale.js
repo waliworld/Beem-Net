@@ -17,6 +17,7 @@ const en={
 };
 const de={'gueltige':'gültige','auswaehlen':'auswählen','pruefen':'prüfen','Zurueck':'Zurück','Vorwaerts':'Vorwärts','schliessen':'schließen','Haeufig':'Häufig','haeufig':'häufig','Waehle':'Wähle','waehlt':'wählt','Druecken':'Drücken','bestaetigt':'bestätigt','oeffnen':'öffnen','zurueck':'zurück','geschuetzten':'geschützten','ergaenzt':'ergänzt','Loeschen':'Löschen','Laedt':'Lädt','Oeffnen':'Öffnen'};
 Object.assign(en,{
+ "Schnellzugriff": "Quick access", "Anheften": "Pin", "Loesen": "Unpin", "Im Schnellzugriff": "Pinned to Quick access", "Aus dem Schnellzugriff entfernt": "Removed from Quick access", "Schnellzugriff ist voll (6). Erst eine Seite loesen.": "Quick access is full (6). Unpin a page first.", "Diese Seite kann nicht angeheftet werden": "This page cannot be pinned", "Eigene Seiten: Lesezeichen oder Verlauf oeffnen und Anheften waehlen.": "Your own pages: open Bookmarks or History and choose Pin.",
  "Die Seite ist ausgelastet ...": "The page is busy ...", "Bild: Scharf": "Picture: Sharp", "Bild: Schnell": "Picture: Fast", "Seitengroesse": "Page size",
  'Fahrzeug-Audiokanal verbunden':'Vehicle audio channel connected',
  'Fahrzeug-Audio wird verbunden ...':'Connecting vehicle audio ...',

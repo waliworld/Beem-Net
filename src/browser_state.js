@@ -3,13 +3,16 @@ const fs=require('fs'),path=require('path'),Policy=require('./url_policy');
 const Metadata=require('./browser_metadata'),MAX_STATE=256*1024;
 // The page sizes offered (per cent). Below 100 a page shows more of itself, smaller (Beem-Net; upstream: 100 and up).
 const ZOOMS=[50,67,75,90,100,125,150];
+const QUICK_MAX=6;
 function historyURL(url){try{const parsed=new (require('url').URL)(url);for(const key of Array.from(parsed.searchParams.keys()))if(/token|auth|password|session|serverstate|nonce|^state$|^code$|^pin$/i.test(key))parsed.searchParams.delete(key);if(/token|auth|password|session|code=/i.test(parsed.hash))parsed.hash='';return parsed.href;}catch(e){return '';}}
 class BrowserState{
     constructor(directory){
-        this.file=path.join(directory,'browser-state.json');this.data={homepage:'',autoHide:false,zoom:100,historyEnabled:true,blockAds:false,sharp:false,history:[],bookmarks:[]};
+        this.file=path.join(directory,'browser-state.json');this.data={homepage:'',autoHide:false,zoom:100,historyEnabled:true,blockAds:false,sharp:false,history:[],bookmarks:[],quick:[]};
         try{if(fs.statSync(this.file).size<524288){const saved=JSON.parse(fs.readFileSync(this.file,'utf8'));for(const key of Object.keys(this.data))if(saved&&Object.prototype.hasOwnProperty.call(saved,key))this.data[key]=saved[key];}}catch(e){}
         this.data.history=(Array.isArray(this.data.history)?this.data.history:[]).filter(i=>i&&Policy.allowed(i.url)).map(i=>({url:historyURL(i.url),title:Metadata.title(i.title),count:Number.isFinite(i.count)?Math.max(0,i.count):0,at:Number.isFinite(i.at)?i.at:0})).slice(0,120);
         this.data.bookmarks=(Array.isArray(this.data.bookmarks)?this.data.bookmarks:[]).filter(i=>i&&Policy.allowed(i.url)).map(i=>({url:i.url,title:Metadata.title(i.title)})).slice(0,80);
+        // (Beem-Net: the pages the owner pinned to the start page's Quick access - their own choice, kept on the unit)
+        this.data.quick=(Array.isArray(this.data.quick)?this.data.quick:[]).filter(i=>i&&Policy.allowed(i.url)).map(i=>({url:i.url,title:Metadata.title(i.title)})).slice(0,QUICK_MAX);
         if(!Policy.allowed(this.data.homepage))this.data.homepage='';
         if(ZOOMS.indexOf(this.data.zoom)<0)this.data.zoom=100;
         if(typeof this.data.blockAds!=='boolean')this.data.blockAds=false;
@@ -33,6 +36,14 @@ class BrowserState{
         else this.data.bookmarks.unshift({url,title:Metadata.title(title||url)});
         this.data.bookmarks=this.data.bookmarks.slice(0,80);this.save();
     }
+    pinned(url){return this.data.quick.some(i=>i.url===url);}
+    // Pins a page to Quick access or takes it off: 'pinned', 'removed', or 'full' (six are pinned: nothing changed).
+    toggleQuick(url,title){
+        if(!Policy.allowed(url))return '';
+        if(this.pinned(url)){this.data.quick=this.data.quick.filter(i=>i.url!==url);this.save();return 'removed';}
+        if(this.data.quick.length>=QUICK_MAX)return 'full';
+        this.data.quick.push({url,title:Metadata.title(title||url)});this.save();return 'pinned';
+    }
     frequent(){return this.data.history.slice().sort((a,b)=>b.count-a.count||b.at-a.at).slice(0,9);}
 }
 function inputURL(value){
@@ -40,4 +51,4 @@ function inputURL(value){
     if(Policy.addressLike(v))return Policy.normalize(v);
     return 'https://www.google.com/search?q='+encodeURIComponent(v);
 }
-module.exports={BrowserState,inputURL,ZOOMS};
+module.exports={BrowserState,inputURL,ZOOMS,QUICK_MAX};

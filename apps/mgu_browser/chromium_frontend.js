@@ -19,7 +19,7 @@ mgu.run({async start(ctx){
     installLayout(ctx.display);
     let frame=null,page=null,currentURL='',title='',webMode=false,landing=true,panel=null,keyboard=null,draft='',replaceDraft=false;
     let keyMode='abc',upper=false,starting=false,loading=false,canBack=false,canForward=false,serviceReady=false,pendingLaunch=true;
-    let closing=false,wasVisible=false,reading=false,lastAction=Date.now(),toast='',toastUntil=0,resized='',resizeRetry=0,listTab='frequent',listOffset=0;
+    let closing=false,wasVisible=false,reading=false,lastAction=Date.now(),toast='',toastUntil=0,resized='',resizeRetry=0,listTab='quick',listOffset=0;
     let editable=false,password=false,inputType='',multiline=false,tipLabels={};
     let findBar=false,findState={active:false,query:'',found:false};
     let tabs=[],activeTab='',wifiState={},wifiSSID='',wifiPassword='',wifiBusy=false,wifiInternet=null,wifiPoll=0;
@@ -482,7 +482,18 @@ mgu.run({async start(ctx){
         const time=s=>Math.floor((s||0)/60)+':'+('0'+Math.floor((s||0)%60)).slice(-2);
         c.text(time(media.currentTime)+' / '+time(media.duration)+'   '+ascii('Drehen: wählen | Drücken: ausführen | Neigen links/rechts: 10 s'),350,bottom-29,17,C.muted);
     }
+    // Quick access: the owner's pinned pages first, then the built-in ones while there is room (six tiles)
+    const QUICK_DEFAULTS=[['Wikipedia','https://www.wikipedia.org/'],['DuckDuckGo','https://duckduckgo.com/'],['YouTube','https://www.youtube.com/'],['Invidious','https://yt.chocolatemoo53.com/'],['PeerTube','https://sepiasearch.org/'],['Internet Archive','https://archive.org/details/movies']];
+    function quickRows(){
+        const pins=store.data.quick||[];
+        return pins.concat(QUICK_DEFAULTS.filter(d=>!pins.some(i=>i.url===d[1])).map(d=>({title:d[0],url:d[1],builtin:true}))).slice(0,6);
+    }
+    function pin(item){
+        const r=store.toggleQuick(item.url,item.title);
+        note(r==='pinned'?'Im Schnellzugriff':r==='removed'?'Aus dem Schnellzugriff entfernt':r==='full'?'Schnellzugriff ist voll (6). Erst eine Seite loesen.':'Diese Seite kann nicht angeheftet werden');
+    }
     function rowsForList(){
+        if(listTab==='quick')return quickRows();
         if(listTab==='bookmarks')return store.data.bookmarks;
         if(listTab==='history')return store.data.history;
         return store.frequent();
@@ -490,19 +501,12 @@ mgu.run({async start(ctx){
     function drawStart(c,bottom){
         if(panel==='library'){c.text('Deine Seiten',64,118,38,C.text);c.text('Dein Web. Direkt im iDrive.',65,153,19,C.muted);}
         else{mark(c,64,78,76,TABS);c.text('Beem-Net',156,122,40,C.text,{literal:true,font:'bold'});c.text('Dein Web. Direkt im iDrive.',157,151,19,C.muted);}
-        const tabs=[['frequent','Haeufig besucht'],['bookmarks','Lesezeichen'],['history','Verlauf']];
+        const tabs=[['quick','Schnellzugriff'],['frequent','Haeufig besucht'],['bookmarks','Lesezeichen'],['history','Verlauf']];
         tabs.forEach((t,i)=>button(c,64+i*238,181,224,42,t[1],()=>{listTab=t[0];listOffset=0;},'list-'+t[0],{primary:listTab===t[0]}));
         const items=rowsForList();
         if(!items.length){
             c.text(listTab==='bookmarks'?'Noch keine Lesezeichen':listTab==='history'?'Dein Verlauf beginnt mit der ersten Seite':'Hier erscheinen deine haeufig besuchten Seiten',65,282,24,C.text);
             c.text('Waehle oben die Adressleiste. Drehen waehlt, Druecken bestaetigt.',65,319,19,C.muted);
-            if(listTab==='frequent'){
-                c.text('SCHNELLZUGRIFF',65,380,15,C.muted);
-                // (the open video sites are lighter pages than YouTube's own: Invidious is an open-source front end to
-                // YouTube - a public instance, they come and go; PeerTube and the Internet Archive are free video)
-                const quick=[['Wikipedia','https://www.wikipedia.org/'],['DuckDuckGo','https://duckduckgo.com/'],['YouTube','https://www.youtube.com/'],['Invidious','https://yt.chocolatemoo53.com/'],['PeerTube','https://sepiasearch.org/'],['Internet Archive','https://archive.org/details/movies']],qw=Math.floor((W-128-(quick.length-1)*16)/quick.length);
-                quick.forEach((i,n)=>button(c,64+n*(qw+16),402,qw,62,i[0],()=>navigate(i[1]),'suggestion-'+n));
-            }
             return;
         }
         const count=6,max=Math.max(0,items.length-count);listOffset=Math.min(listOffset,max);
@@ -511,8 +515,11 @@ mgu.run({async start(ctx){
             c.roundRect(x,y,470,80,10,C.panel);
             c.text((item.title||displayURL(item.url)).slice(0,38),x+18,y+33,21,C.text,{literal:true});
             c.text(displayURL(item.url).slice(0,52),x+18,y+61,16,C.muted,{literal:true});
-            c.target(x,y,470,80,()=>safe(()=>navigate(item.url)),'visit-'+i);
+            c.target(x,y,item.builtin?470:356,80,()=>safe(()=>navigate(item.url)),'visit-'+i);
+            // (pin to Quick access / take off it; the built-in tiles make room on their own)
+            if(!item.builtin)button(c,x+362,y+20,98,40,store.pinned(item.url)?'Loesen':'Anheften',()=>pin(item),'pin-'+i);
         });
+        if(listTab==='quick')c.text('Eigene Seiten: Lesezeichen oder Verlauf oeffnen und Anheften waehlen.',64,bottom-28,17,C.muted);
         if(items.length>count){button(c,64,bottom-55,135,38,'Zurueck',()=>{listOffset=Math.max(0,listOffset-count);},'list-prev');button(c,212,bottom-55,135,38,'Weitere',()=>{listOffset=Math.min(max,listOffset+count);},'list-next');}
     }
     function drawSettings(c,bottom){

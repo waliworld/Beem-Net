@@ -70,8 +70,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          title="Beem-Net 1.1.1 for iDrive 7 and iDrive 8 - Beta 3 (MGU Store catalog)"
-          notes="Experimental. An internet browser for BMW iDrive 7 and iDrive 8, installed from the MGU Store: add the source waliworld/Beem-Net and choose Releases. Beta 3: faster (video sites are offered H.264 up to 30 fps, a smaller page picture with a Fast / Sharp setting, reduced motion), no more timeout messages when the page is busy, full width on iDrive 8, page zoom from 50 %, English everywhere in the app, a new logo and design. Beta 2 ran on a car; Beta 3 has not yet. The release before is kept as beta2. Use this source or upstream's on a car, not both."
+          title="Beem-Net 1.2.0 for iDrive 7 and iDrive 8 - Beta 4 (MGU Store catalog)"
+          notes="Beta 4: your own Quick access - pin up to six pages to the start page from Bookmarks or History. Experimental. An internet browser for BMW iDrive 7 and iDrive 8, installed from the MGU Store: add the source waliworld/Beem-Net and choose Releases. Beta 3: faster (video sites are offered H.264 up to 30 fps, a smaller page picture with a Fast / Sharp setting, reduced motion), no more timeout messages when the page is busy, full width on iDrive 8, page zoom from 50 %, English everywhere in the app, a new logo and design. Beta 2 ran on a car; Beta 3 has not yet. The release before is kept as beta2. Use this source or upstream's on a car, not both."
           if gh release view catalog >/dev/null 2>&1; then
             gh release edit catalog --title "$title" --notes "$notes" --latest
           else

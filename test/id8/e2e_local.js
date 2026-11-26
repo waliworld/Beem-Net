@@ -19,7 +19,7 @@ const PAGES = {
     await new Promise((r) => server.listen(Number(process.env.DEMO_PORT) || 18480, '127.0.0.1', r));   // (a fixed port: the backend restores the last tab's address)
     const home = 'http://127.0.0.1:' + server.address().port + '/';
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'beemnet-e2e-'));
-    fs.writeFileSync(path.join(dir, 'browser-state.json'), JSON.stringify({ homepage: process.env.START_ONLY ? '' : home, historyEnabled: false, zoom: Number(process.env.ZOOM) || 100 }));
+    fs.writeFileSync(path.join(dir, 'browser-state.json'), JSON.stringify({ homepage: process.env.START_ONLY ? '' : home, historyEnabled: false, zoom: Number(process.env.ZOOM) || 100, quick: process.env.PINS ? [{ url: 'https://example.org/', title: 'My pinned page' }] : [] }));
     process.env.MGU_RENDERD_FILE = path.join(dir, 'stream.bin');
     process.env.MGU_EMULATOR_MODE = '1';
     process.env.MGU_BROWSER_SOCKET = socket;

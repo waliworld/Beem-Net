@@ -37,7 +37,7 @@ ENGINE = ('v0.10.0/mgu-browser-engine%400.1.0.tgz', '0b6a73c964354214262d01f2d9b
 # the package - the native helpers above all - stays upstream's.
 RUNTIME_OURS = {'runtime/': 'runtime/', 'backend/': 'src/'}
 # Beem-Net's own version line for the app and the runtime (upstream's are 0.x under the same ids)
-VERSION = '1.1.1'
+VERSION = '1.2.0'
 HMI = ['ID7', 'ID8']
 REQUIRES_APP = {'mgu-browser': VERSION, 'mgu-browser-engine': '0.1.0', 'mgu-uplink': '0.7.3', 'mgu-render': '0.6.11', 'mgu-deploy': '0.7.17'}
 
