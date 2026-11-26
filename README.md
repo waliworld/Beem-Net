@@ -23,8 +23,8 @@ from a local web server; the scroll and the tap in them were sent as touches.
 
 | Head unit | Tried on a car |
 |---|---|
-| **iDrive 8** | Beta 2 ran on the owner's car: pages, and YouTube with picture and sound, but slow and with timeout messages. Beta 3 is the answer to that and has not been on a car yet |
-| **iDrive 7** | upstream's own build runs on its author's iDrive 7 unit; this build has not been tried |
+| **iDrive 8** | not yet: the open question is whether the engine runs there at all |
+| **iDrive 7** | Beta 2 ran on the owner's car: pages, and YouTube with picture and sound through the car's speakers, but slow and with timeout messages. Beta 3 is the answer to that and has not been on a car yet |
 
 New in Beta 3:
 
