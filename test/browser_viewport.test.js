@@ -21,7 +21,7 @@ function fixture(){
     }};return {browser,calls,state};
 }
 test('Native zoom validates physical frame limits and supported levels before CDP',async()=>{
-    const f=fixture();for(const args of [[639,400,100],[1281,400,100],[1280,199,100],[1280,721,100],[1280,400,126]])await assert.rejects(()=>f.browser.resize(...args),/Browsergroesse/);assert.equal(f.calls.length,0);
+    const f=fixture();for(const args of [[639,400,100],[1281,400,100],[1280,199,100],[1280,721,100],[1280,400,151],[1280,400,29],[1280,400,99.5]])await assert.rejects(()=>f.browser.resize(...args),/Browsergroesse/);assert.equal(f.calls.length,0);
 });
 test('Native mouse/drag positions stay CSS while wheel distances preserve CSS scrolling',()=>{
     const wheel={type:'mouseWheel',x:120,y:80,deltaX:70,deltaY:110};assert.deepEqual(Viewport.inputParams({zoom:150},'Input.dispatchMouseEvent',wheel),{type:'mouseWheel',x:120,y:80,deltaX:105,deltaY:165});assert.equal(wheel.deltaX,70);

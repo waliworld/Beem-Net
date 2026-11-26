@@ -1,48 +1,55 @@
+<p align="center"><img src="docs/media/logo.png" width="120" alt="Beem-Net"></p>
+
 # Beem-Net
 
 An internet browser for **BMW iDrive 7 and iDrive 8**, installed from the
 [MGU Store](https://github.com/robertnisipeanu/mgu-store). A real Chromium runs on the head unit, out of sight; the
 app shows its picture and sends it your touches.
 
-> **Beta 2 (1.0.0), experimental, not confirmed on a car yet.** It is published so it can be tried on one. Unofficial: not
-> affiliated with or endorsed by BMW or Google. Use it parked.
-
-Beem-Net is **[MGU Browser](https://github.com/pllanaio/mgu-browser) by Leon Pllana**, which is written for
-iDrive 7, made to install on iDrive 8 as well: one source, one app package, both head units. The browser itself - the Chromium engine, the service behind the app, the tabs, forms,
-downloads and the rest - is his work, MIT licensed, and is credited in [CREDITS.md](CREDITS.md). His own
-documentation is kept under [docs/](docs/) ([English overview](docs/UPSTREAM_README.en.md),
-[German](docs/UPSTREAM_README.de.md)).
+> **Beta 3 (1.1.0), experimental.** Unofficial: not affiliated with or endorsed by BMW or Google. Use it parked.
 
 | | |
 |---|---|
-| ![A page](docs/media/id8-page.png) | ![Scrolled](docs/media/id8-page-scrolled.png) |
-| A page in Beem-Net on the iDrive 8 screen: the bar, the tabs, the page | Scrolled with a finger |
-| ![After a tap](docs/media/id8-page-second.png) | |
-| A tap on the page's link opened the next page | |
+| ![Start](docs/media/id8-start.png) | ![A page](docs/media/id8-page.png) |
+| The start page | A page, the full width of the iDrive 8 screen |
+| ![After a tap](docs/media/id8-page-second.png) | ![Settings](docs/media/id8-settings.png) |
+| A tap on the page's link opened the next page | Settings: page zoom from 50 % to 150 %, picture Fast or Sharp |
 
 These are not photos of a car. They are made on a computer by `test/id8/e2e_local.js`: the built app on a simulated
 2880 x 960 iDrive 8 screen, the real backend and the real Chromium engine from the release, loading a demo page
-from a local web server; the scroll and the tap in them were sent as touches. A photo from a car will replace them.
+from a local web server; the scroll and the tap in them were sent as touches.
 
 ## Where it stands
 
-| Head unit | What you get | Tried on a car |
-|---|---|---|
-| **iDrive 8** | the page's picture and touch (below) | not yet: the open question is whether the engine runs there at all |
-| **iDrive 7** | MGU Browser 0.16.1 as its author published it - the same service and engine files - with the app built on the newer app kit | upstream's own build runs on its author's iDrive 7 unit; this build with the newer kit has not been tried |
-
-On iDrive 8:
-
-| | |
+| Head unit | Tried on a car |
 |---|---|
-| In it | The app on the iDrive 8 screen (2880 x 960: the page under BMW's status bar and over the climate bar), touch on the page (tap, scroll), the address bar and the on-screen keyboard, tabs, bookmarks and history as upstream has them |
-| Not yet | **Sound.** Upstream's way to the car's speakers is an iDrive 7 one. **Smooth video**: pages are shown as pictures, which is fine for reading and slow for video |
-| Never, as it stands | Netflix, Disney+ and the like: no DRM module is shipped |
+| **iDrive 8** | Beta 2 ran on the owner's car: pages, and YouTube with picture and sound, but slow and with timeout messages. Beta 3 is the answer to that and has not been on a car yet |
+| **iDrive 7** | upstream's own build runs on its author's iDrive 7 unit; this build has not been tried |
+
+New in Beta 3:
+
+- **Faster.** The engine draws and decodes everything on the processor, so the app asks for less of it: video sites
+  are offered H.264 up to 30 frames a second instead of VP9 / AV1 / 60 fps (several times the decoding work), the
+  page's picture is 960 px wide instead of 1280 unless you choose **Picture: Sharp** in Settings (the page keeps its
+  layout either way), pages are told to reduce motion, and the picture is sent a little more compressed.
+- **Quiet when busy.** A slow answer from the engine is said once a minute as "The page is busy ...", not as a
+  timeout message each time.
+- **Full width on iDrive 8**: the bar and the page use the whole screen between BMW's status bar and climate bar.
+- **Page zoom below 100 %**: 50, 67, 75, 90, 100, 125, 150 %.
+- **English everywhere** in the app when the car is not set to German. (The phone remote's web page is still
+  German.)
+- A logo, a start page and a calmer dark design.
+
+Still true: video is shown as pictures of the page, so it will not be as smooth as an app made for video
+([BeeMTube2](https://github.com/waliworld/iDrive8-RideTube) is that app for YouTube on iDrive 8). Netflix, Disney+
+and the like do not play: no DRM module is shipped.
+
+The previous release is kept as [`beta2`](https://github.com/waliworld/Beem-Net/releases/tag/beta2).
 
 ## Install
 
 1. In the MGU Store, add the source **`waliworld/Beem-Net`** and choose **Releases**.
-2. Install **Beem-Net**. The Store installs what it needs with it: the Beem-Net runtime, the Chromium engine (about
+2. Install **Beem-Net**. The Store installs what it needs with it: the Beem-Net service, the Chromium engine (about
    170 MB - give it time and a good connection), the Store's internet uplink and the GPU renderer.
 3. Restart the head unit, then open **Beem-Net**.
 
@@ -53,9 +60,10 @@ If it does not open a page, a photo of what the screen says is what helps.
 - **The app** is built with the public app kit at the version that knows iDrive 8 - it makes one package with
   each unit's screen description - and places its page for the iDrive 8 screen too
   ([src/browser_layout.js](src/browser_layout.js)); on iDrive 7 the placement is upstream's.
-- **The runtime** is upstream's published 0.16.1 package, byte for byte, but for one file: how the app's uid is found
-  on a unit where MainApp keeps no `uids.txt` ([runtime/setup.js](runtime/setup.js); where there is one, as on
-  iDrive 7, it is read as before). It carries Beem-Net's own version, 1.0.0.
+- **The service** is upstream's published 0.16.1 package with its native parts byte for byte; the JavaScript files
+  that differ from upstream's are the ones in this repository's [src/](src/) and [runtime/](runtime/) (the release
+  tool lists them as it builds): the lighter video and picture, any zoom, the English texts, and how the app's uid is
+  found on a unit where MainApp keeps no `uids.txt`. It carries Beem-Net's own version, 1.1.0.
 - **The engine** is upstream's published Chromium package, byte for byte.
 - Both carry `"mguHmi": ["ID7", "ID8"]`: upstream's say iDrive 7 only, which the installer refuses on iDrive 8.
 

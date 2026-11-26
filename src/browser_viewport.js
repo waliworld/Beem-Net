@@ -59,7 +59,7 @@ module.exports={
     resize(pixelWidth,pixelHeight,zoom,reapply){
         try{
             this.requireAllowed();if(!reapply){if(zoom===undefined)zoom=100;
-            if(!Number.isInteger(pixelWidth)||!Number.isInteger(pixelHeight)||pixelWidth<640||pixelWidth>1280||pixelHeight<200||pixelHeight>720||![100,125,150].includes(zoom))throw Error('Ungueltige Browsergroesse');}
+            if(!Number.isInteger(pixelWidth)||!Number.isInteger(pixelHeight)||pixelWidth<640||pixelWidth>1280||pixelHeight<200||pixelHeight>720||!Number.isInteger(zoom)||zoom<30||zoom>150)throw Error('Ungueltige Browsergroesse');}
         }catch(error){return Promise.reject(error);}
         const pipe=this.pipe,session=this.session,epoch=this.epoch,view=this.pageGeneration;
         const valid=()=>this.pipe===pipe&&!pipe.closed&&this.session===session&&this.epoch===epoch&&this.pageGeneration===view&&liveSession(this,session);
@@ -70,7 +70,7 @@ module.exports={
             check();const previous=current(this.viewport),factor=zoom/100;let changedZoom=false,applied=false;
             const world=async()=>{const cached=this.nativeViewportContext;if(cached&&cached.epoch===epoch&&cached.session===session&&cached.view===view&&cached.frames===(this.inputFrameGeneration||0))return cached.id;const tree=await send('Page.getFrameTree',{});if(!tree.frameTree||!tree.frameTree.frame)throw Error('Browserrahmen fehlt');const created=await send('Page.createIsolatedWorld',{frameId:tree.frameTree.frame.id,worldName:WORLD});this.nativeViewportContext={epoch,session,view,frames:this.inputFrameGeneration||0,id:created.executionContextId};return created.executionContextId;};
             const read=async()=>{const deadline=Date.now()+1500;for(;;){try{const result=await send('Runtime.evaluate',{expression:LAYOUT,contextId:await world(),returnByValue:true});if(result.exceptionDetails||!result.result||!result.result.value)throw Error('Browsergroesse konnte nicht gelesen werden');return result.result.value;}catch(error){check();if(Date.now()>=deadline||!/Cannot find default execution context|Execution context was destroyed|Cannot find context/.test(error.message))throw error;this.nativeViewportContext=null;await pause();}}};
-            const ready=async(width,height,level)=>{const deadline=Date.now()+1500;while(Date.now()<deadline){const value=await read();if(value.width===Math.round(width*100/level)&&value.height===Math.round(height*100/level)&&Math.abs(value.dpr-level/100)<0.000001)return value;await pause();}throw Error('Native Browsergroesse wurde nicht uebernommen');};
+            const ready=async(width,height,level)=>{const deadline=Date.now()+1500;while(Date.now()<deadline){const value=await read();if(Math.abs(value.width-width*100/level)<1.01&&Math.abs(value.height-height*100/level)<1.01&&Math.abs(value.dpr-level/100)<0.000001)return value;await pause();}throw Error('Native Browsergroesse wurde nicht uebernommen');};
             try{
                 if(reapply)await send('Page.bringToFront');
                 if(this.nativeViewportEpoch!==epoch){this.nativeViewportEpoch=epoch;this.nativeViewportSessions=new Set();}
@@ -86,7 +86,7 @@ module.exports={
                     // The readback is discarded; projection keeps quality75.
                     await send('Page.captureScreenshot',{format:'jpeg',quality:10,fromSurface:true,captureBeyondViewport:false});
                     await send('Page.stopScreencast');
-                    await send('Page.startScreencast',{format:this.performance&&this.performance.codec==='jpeg-native'?'jpeg':'png',quality:75,maxWidth:1280,maxHeight:720,everyNthFrame:1})
+                    await send('Page.startScreencast',{format:this.performance&&this.performance.codec==='jpeg-native'?'jpeg':'png',quality:62,maxWidth:1280,maxHeight:720,everyNthFrame:1})
                         .catch(error=>{if(!/Screencast is already active/i.test(error&&error.message))throw error;});
                 }
                 if(previous.width!==next.width||previous.height!==next.height||previous.pixelWidth!==pixelWidth||previous.pixelHeight!==pixelHeight||previous.zoom!==zoom)this.inputFrameGeneration=(this.inputFrameGeneration||0)+1;

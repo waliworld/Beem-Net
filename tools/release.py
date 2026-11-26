@@ -32,10 +32,12 @@ ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM = 'https://github.com/pllanaio/mgu-browser/releases/download/'
 RUNTIME = ('v0.16.1/mgu-browser%400.16.1.tgz', 'dac91634fe5ff877913b66add4205895a86f90800d48e8a9897c6cd75cf157aa')
 ENGINE = ('v0.10.0/mgu-browser-engine%400.1.0.tgz', '0b6a73c964354214262d01f2d9bec2d0ab253cac8d27de04708912e804ef0874')
-# the runtime's files this repository changes for iDrive 8 (the package's path -> the repository's)
-RUNTIME_OURS = {'runtime/setup.js': 'runtime/setup.js'}
+# The runtime's files this repository may change (the package's folder -> the repository's): each file of the package
+# there is compared with the repository's and replaced where it differs; the release prints which. Everything else in
+# the package - the native helpers above all - stays upstream's.
+RUNTIME_OURS = {'runtime/': 'runtime/', 'backend/': 'src/'}
 # Beem-Net's own version line for the app and the runtime (upstream's are 0.x under the same ids)
-VERSION = '1.0.0'
+VERSION = '1.1.0'
 HMI = ['ID7', 'ID8']
 REQUIRES_APP = {'mgu-browser': VERSION, 'mgu-browser-engine': '0.1.0', 'mgu-uplink': '0.7.3', 'mgu-render': '0.6.11', 'mgu-deploy': '0.7.17'}
 
@@ -135,11 +137,20 @@ def main():
         made['beemNet'] = 'upstream 0.16.1 with runtime/setup.js of waliworld/Beem-Net'
         return (json.dumps(made, indent=2) + '\n').encode('utf-8')
 
-    changed = {path: (ROOT / local).read_bytes() for path, local in RUNTIME_OURS.items()}
+    changed = {}
+    with tarfile.open(fetch(RUNTIME, cache), 'r:gz') as package:
+        for member in package.getmembers():
+            name = member.name[6:] if member.name.startswith('files/') else ''
+            for folder, local in RUNTIME_OURS.items():
+                if member.isfile() and name.startswith(folder) and name.endswith('.js') and '/' not in name[len(folder):]:
+                    mine = ROOT / local / name[len(folder):]
+                    if mine.is_file() and mine.read_bytes() != package.extractfile(member).read():
+                        changed[name] = mine.read_bytes()
+    print('the runtime\'s files that are this repository\'s: ' + ', '.join(sorted(changed)))
     changed['build-provenance.json'] = provenance
     runtime_file = out / ('mgu-browser@' + VERSION + '.tgz')
-    runtime = repack(fetch(RUNTIME, cache), runtime_file, ours('Beem-Net runtime (experimental)', VERSION), changed)
-    engine = repack(fetch(ENGINE, cache), out / 'mgu-browser-engine@0.1.0.tgz', ours('Beem-Net Chromium engine (experimental)'))
+    runtime = repack(fetch(RUNTIME, cache), runtime_file, ours('Beem-Net service', VERSION), changed)
+    engine = repack(fetch(ENGINE, cache), out / 'mgu-browser-engine@0.1.0.tgz', ours('Beem-Net engine'))
 
     spec = json.loads((ROOT / 'apps' / 'mgu_browser' / 'app.json').read_text(encoding='utf-8'))
     if spec['version'] != VERSION:
@@ -154,13 +165,17 @@ def main():
     app = out / (spec['id'] + '@' + spec['version'] + '.tgz')
     shutil.copyfile(stage / app.name, app)
 
+    # (the names and descriptions the Store shows say what a thing is; who made what is in the repository's README and
+    # CREDITS.md, and each package keeps its LICENSE files)
+    icon = (ROOT / 'apps' / spec['id'] / 'icon.png').read_bytes()
+    (out / 'beem_net.png').write_bytes(icon)
     components = [
-        entry({'id': spec['id'], 'kind': 'app', 'version': spec['version'], 'title': 'Beem-Net (experimental)', 'requires': REQUIRES_APP}, app, args.base,
+        entry({'id': spec['id'], 'kind': 'app', 'version': spec['version'], 'title': 'Beem-Net', 'requires': REQUIRES_APP}, app, args.base,
               {'description': 'An internet browser for iDrive 7 and iDrive 8: a real Chromium on the head unit, its picture in the app, touch on the page. '
-                              'Experimental. iDrive 8: picture and touch; sound and smooth video are not there yet. iDrive 7: as upstream MGU Browser 0.16.1. Based on MGU Browser by Leon Pllana.',
-               'author': 'Waliworld #tunedbywali, on MGU Browser by Leon Pllana'}),
-        entry(runtime, runtime_file, args.base, {'author': 'Leon Pllana; iDrive 8 changes by Waliworld'}),
-        entry(engine, out / 'mgu-browser-engine@0.1.0.tgz', args.base, {'author': 'Leon Pllana'}),
+                              'Experimental. On iDrive 8: picture and touch; sound and smooth video are not there yet.',
+               'icon': 'beem_net.png', 'iconSha256': sha(icon)}),
+        entry(runtime, runtime_file, args.base, {'description': 'The service behind Beem-Net: it runs the browser engine, out of sight, as its own unprivileged user.'}),
+        entry(engine, out / 'mgu-browser-engine@0.1.0.tgz', args.base, {'description': 'The Chromium engine Beem-Net shows pages with (about 170 MB).'}),
     ]
     (out / 'catalog.json').write_text(json.dumps({'schema': 2, 'components': components}, indent=2) + '\n', encoding='utf-8')
     for c in components:

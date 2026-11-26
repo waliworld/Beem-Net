@@ -17,6 +17,7 @@ const en={
 };
 const de={'gueltige':'gültige','auswaehlen':'auswählen','pruefen':'prüfen','Zurueck':'Zurück','Vorwaerts':'Vorwärts','schliessen':'schließen','Haeufig':'Häufig','haeufig':'häufig','Waehle':'Wähle','waehlt':'wählt','Druecken':'Drücken','bestaetigt':'bestätigt','oeffnen':'öffnen','zurueck':'zurück','geschuetzten':'geschützten','ergaenzt':'ergänzt','Loeschen':'Löschen','Laedt':'Lädt','Oeffnen':'Öffnen'};
 Object.assign(en,{
+ "Die Seite ist ausgelastet ...": "The page is busy ...", "Bild: Scharf": "Picture: Sharp", "Bild: Schnell": "Picture: Fast", "Seitengroesse": "Page size",
  'Fahrzeug-Audiokanal verbunden':'Vehicle audio channel connected',
  'Fahrzeug-Audio wird verbunden ...':'Connecting vehicle audio ...',
  'Fahrzeug-Audiokanal bereits belegt':'Vehicle audio channel is already in use',
@@ -135,6 +136,104 @@ const deMessages={
  'Permission website changed':'Webseite wurde gewechselt','Unsupported permission decision':'Ungültige Berechtigungsantwort',
  'Permission request expired':'Berechtigungsanfrage ist abgelaufen'
 };
+// Beem-Net: English for the lines upstream shows in German only (the service's status, errors, notes), and for the
+// lines put together from a fixed start or end and a changing middle (enParts)
+Object.assign(en,{
+ "Ungültiges ALSA-Ausgabegerät": "Invalid ALSA output device",
+ "Ungültiger Audiozustand": "Invalid audio state",
+ "Medien sind deaktiviert": "Media is switched off",
+ "Fahrzeug-Audio ist in dieser Laufzeit nicht verfügbar": "Car audio is not available in this version",
+ "Testton läuft bereits": "The test tone is already playing",
+ "Zuerst eine Webseite öffnen": "Open a web page first",
+ "Testton konnte nicht erzeugt werden. Audio-Ausgabe prüfen.": "The test tone could not be made. Check the audio output.",
+ "Unsicherer Audio-Arbeitsordner": "Unsafe audio work folder",
+ "Unerwartete Audio-Arbeitsdateien": "Unexpected audio work files",
+ "Unsichere Audio-Arbeitsdatei": "Unsafe audio work file",
+ "Audioausgabe wird bereits umgeschaltet": "The audio output is already being switched",
+ "Audioausgabe antwortet nicht": "The audio output does not answer",
+ "Fahrzeug-Audio ist nicht vorbereitet": "Car audio is not set up",
+ "Audioausgabe beendet": "The audio output ended",
+ "Page.navigate: Zeitlimit": "The page took too long to open",
+ "Medien-Sperre konnte nicht gesetzt werden": "The media lock could not be set",
+ "Browser nicht im Vordergrund": "The browser is not in front",
+ "Browser nicht freigegeben": "The browser is not enabled",
+ "Browser-Dienst noch nicht bereit": "The browser service is not ready yet",
+ "Browser-Dienst: Zeitlimit": "The browser service took too long to answer",
+ "Eingebettete Webseite hat gewechselt": "The embedded page changed",
+ "Webseite hat gewechselt": "The page changed",
+ "Zuerst eine HTTPS-Webseite öffnen": "Open an HTTPS page first",
+ "Medienprüfung fehlgeschlagen": "The media check failed",
+ "Video-Steuerung noch nicht auswählbar": "The video controls cannot be selected yet",
+ "Video-Schaltfläche erneut auswählen": "Select the video button again",
+ "Zuerst eine Video-Schaltfläche auswählen": "Select a video button first",
+ "Unbekannte Videoaktion": "Unknown video action",
+ "Medienwiedergabe ist derzeit deaktiviert": "Media playback is switched off for now",
+ "Videoaktion auf dieser Seite nicht verfuegbar": "This video action is not available on this page",
+ "Lokaler Videotest konnte nicht erzeugt werden": "The local video test could not be made",
+ "Maximal 8 Tabs. Bitte zuerst einen Tab schliessen.": "8 tabs at most. Close a tab first.",
+ "Seitenverbindung konnte nicht wiederhergestellt werden": "The connection to the page could not be restored",
+ "Seitenverbindung hat sich geändert": "The connection to the page changed",
+ "Tab nicht vorhanden": "No such tab",
+ "Tab wurde bereits geschlossen": "The tab is already closed",
+ "Tab konnte nicht geschlossen werden": "The tab could not be closed",
+ "Tabstart abgebrochen": "Opening the tab was cancelled",
+ "Tabwechsel abgebrochen": "Switching tabs was cancelled",
+ "Geschützter Speicher nicht verfügbar": "Protected storage is not available",
+ "Unbekannte Datenkategorie": "Unknown kind of data",
+ "Website-Daten werden gelöscht": "Clearing website data",
+ "Passwortspeicher nicht verfügbar": "The password store is not available",
+ "Zuerst ein HTTPS-Anmeldeformular ausfüllen": "Fill in an HTTPS sign-in form first",
+ "Kein vollständiges HTTPS-Anmeldeformular gefunden": "No complete HTTPS sign-in form found",
+ "Zuerst eine HTTPS-Anmeldeseite öffnen": "Open an HTTPS sign-in page first",
+ "Zugangsdaten nur auf der passenden HTTPS-Seite": "Sign-in details only on their own HTTPS page",
+ "Passendes Anmeldeformular nicht gefunden": "No matching sign-in form found",
+ "Browserstart abgebrochen": "Starting the browser was cancelled",
+ "Browser-Laufzeit fehlt: im Store \"Browser\" über die Quelle \"Releases\" installieren.": "The Beem-Net service is missing: install Beem-Net from the Store source's Releases.",
+ "Browser-Dienst startet … (noch kein Status)": "The browser service is starting … (no status yet)",
+ "Browser-Dienststatus ist veraltet. Laufzeit im Store prüfen.": "The browser service's status is out of date. Check the Beem-Net service in the Store.",
+ "Browser-Dienst bereitet die Laufzeit vor …": "The browser service is getting ready …",
+ "Browser-Dienst wartet auf die App-Registrierung. Headunit einmal neu starten.": "The browser service is waiting for the app to be registered. Restart the head unit once.",
+ "Browser-Dienst startet …": "The browser service is starting …",
+ "Browser-Dienst konnte den Backend-Prozess nicht starten. Laufzeit im Store prüfen.": "The browser service could not start its engine. Check the Beem-Net service in the Store.",
+ "Browser-Dienst ist angehalten. Headunit einmal neu starten.": "The browser service is stopped. Restart the head unit once.",
+ "Browser-Dienst läuft, App verbindet …": "The browser service is running, the app is connecting …",
+ "Vordergrundstatus fehlt": "No foreground status",
+ "Browser benötigt einen unprivilegierten Linux-Benutzer": "The browser needs an unprivileged Linux user",
+ "Profilordner gehört nicht dem Browser-Benutzer": "The profile folder does not belong to the browser's user",
+ "Browser konnte nicht starten": "The browser could not start",
+ "Browser-Verbindung beendet": "The connection to the browser ended",
+ "Gespeicherter Tab konnte nicht geladen werden": "A saved tab could not be loaded",
+ "Browserstart fehlgeschlagen": "The browser failed to start",
+ "Browser nicht verbunden": "The browser is not connected",
+ "Webseite abgestürzt. Browser erneut öffnen.": "The page crashed. Open the browser again.",
+ "Webseite abgestürzt": "The page crashed",
+ "Ziehinhalt ist zu gross": "The dragged content is too large",
+ "Gespeicherte Tabs konnten nicht aktualisiert werden": "The saved tabs could not be updated",
+ "Geschützte Sitzung konnte nicht gespeichert werden": "The protected session could not be saved",
+ "Browser-Prozess nicht beendet. Backend-Neustart erforderlich.": "The browser process did not end. The service must be restarted.",
+ "App geschlossen": "App closed",
+ "Browserdarstellung nach Navigation noch nicht bereit": "The page's picture is not ready yet",
+ "Native Browserzoom ist nicht verfuegbar": "Page zoom is not available",
+ "Native Browserzoom konnte nicht gesetzt werden": "The page zoom could not be set",
+ "Browserrahmen fehlt": "The browser frame is missing",
+ "Browsergroesse konnte nicht gelesen werden": "The browser's size could not be read",
+ "Native Browsergroesse wurde nicht uebernommen": "The browser's size was not taken",
+ "Browsergroesse konnte nicht wiederhergestellt werden": "The browser's size could not be restored",
+ "Geschützten Speicher und Dateirechte prüfen": "Check the protected storage and its file rights",
+ "Geschützter Speicher ist in dieser Laufzeit nicht verfügbar": "Protected storage is not available in this version",
+ "Geschützten Speicher zuerst entsperren": "Unlock the protected storage first",
+ "Windows-Kontoschutz entsperrt diesen Speicher": "The Windows account unlocks this storage",
+ "Masterpasswort oder geschützter Speicher ungültig": "Wrong master password, or the protected storage is invalid",
+ "Masterpasswort + AES-256-GCM": "Master password + AES-256-GCM",
+ "Geschützter Speicher ist gesperrt": "The protected storage is locked",
+ "Kein gespeicherter Zugang für diese HTTPS-Seite": "No saved sign-in for this HTTPS page",
+ "WLAN-Dienst antwortet nicht": "The Wi-Fi service does not answer",
+ "WLAN-Einstellungsdienst noch nicht installiert oder gestartet": "The Wi-Fi settings service is not installed or not started yet",
+ "Ungueltige WLAN-Antwort": "Invalid answer from the Wi-Fi service",
+ "WLAN-Dienst hat die Anfrage beendet": "The Wi-Fi service ended the request",
+ "Aktion fehlgeschlagen": "The action failed"
+});
+const enParts=[["Browser-Dienst beendet (Code ", "The browser service ended (code "], [") – Neustart läuft …", ") - restarting …"], ["Fahrzeug-Audio nicht verfügbar (", "Car audio is not available ("], ["Browser beendet (", "The browser ended ("], ["Browser-Verbindung: ", "Browser connection: "], ["WLAN verbunden: ", "Wi-Fi connected: "]];
 function normalize(value){const s=String(value||'').replace(/_/g,'-');return /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/.test(s)?s:'en-GB';}
 class BrowserLocale{
     constructor(app,changed){
@@ -145,7 +244,9 @@ class BrowserLocale{
     }
     text(value){
         const s=String(value==null?'':value);if(this.language.toLowerCase().startsWith('de'))return deMessages[s]||s.replace(/gueltige|auswaehlen|pruefen|Zurueck|Vorwaerts|schliessen|Haeufig|haeufig|Waehle|waehlt|Druecken|bestaetigt|oeffnen|zurueck|geschuetzten|ergaenzt|Loeschen|Laedt|Oeffnen|fuer|Fuer|verfuegbar|vollstaendig|unterstuetzt|hoechstens|groesse|verschluesselt/g,m=>de[m]);
-        return en[s]||s;
+        if(en[s])return en[s];
+        let out=s;for(const p of enParts)if(out.indexOf(p[0])>=0)out=out.split(p[0]).join(p[1]);
+        return out;
     }
     keyboard(){
         const lang=this.language.slice(0,2).toLowerCase();

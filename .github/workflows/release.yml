@@ -53,12 +53,25 @@ jobs:
       - name: Build the release (dist/release/)
         run: python3 tools/release.py --kit "$RUNNER_TEMP/kit"
 
+      - name: Keep Beta 2 as the release beta2 (once)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/beta2" >/dev/null 2>&1; then echo "beta2 is kept already"; exit 0; fi
+          mkdir "$RUNNER_TEMP/beta2" && cd "$RUNNER_TEMP/beta2"
+          gh release download catalog --repo "$GITHUB_REPOSITORY"
+          grep -q '"version": "1.0.0"' catalog.json || { echo "the catalog is not Beta 2 (1.0.0): nothing kept"; exit 0; }
+          sed -i 's#/releases/download/catalog/#/releases/download/beta2/#g' catalog.json
+          gh release create beta2 --repo "$GITHUB_REPOSITORY" --target 5a3374746dd20242e3a5c3f21e417b0f701fde5f --latest=false \
+            --title "Beem-Net 1.0.0 - Beta 2 (kept to go back to)" \
+            --notes "The release before Beta 3, kept unchanged. To use it, the MGU Store would need this release as the catalog; ask before going back." ./*
+
       - name: Publish it as the release "catalog"
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          title="Beem-Net 1.0.0 for iDrive 7 and iDrive 8 - Beta 2 (MGU Store catalog)"
-          notes="Experimental. An internet browser for BMW iDrive 7 and iDrive 8, installed from the MGU Store: add the source waliworld/Beem-Net and choose Releases. One app package for both. iDrive 8: the page's picture and touch; sound and smooth video are not there yet; not confirmed on a car. iDrive 7: MGU Browser 0.16.1 as its author published it, built with the newer app kit; that build is not confirmed on a car either. Use this source or upstream's on a car, not both. Based on MGU Browser by Leon Pllana (MIT)."
+          title="Beem-Net 1.1.0 for iDrive 7 and iDrive 8 - Beta 3 (MGU Store catalog)"
+          notes="Experimental. An internet browser for BMW iDrive 7 and iDrive 8, installed from the MGU Store: add the source waliworld/Beem-Net and choose Releases. Beta 3: faster (video sites are offered H.264 up to 30 fps, a smaller page picture with a Fast / Sharp setting, reduced motion), no more timeout messages when the page is busy, full width on iDrive 8, page zoom from 50 %, English everywhere in the app, a new logo and design. Beta 2 ran on a car; Beta 3 has not yet. The release before is kept as beta2. Use this source or upstream's on a car, not both."
           if gh release view catalog >/dev/null 2>&1; then
             gh release edit catalog --title "$title" --notes "$notes" --latest
           else

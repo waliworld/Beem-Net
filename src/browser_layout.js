@@ -9,11 +9,11 @@ module.exports=function install(display){
         place();if(!applies())return;
         const p=this.place;
         // iDrive 8 (2880 x 960): the renderer gives the app the area under BMW's status bar already (764 high, over
-        // the climate bar), so no strip is kept free at the top; the browser's 1600 x 520 page is scaled to that
-        // height and centred - its tested layout whole, nothing under the climate bar.
+        // the climate bar), so no strip is kept free at the top; the browser's 520 px high page is scaled to that
+        // height and made as wide as the screen (browserWidth: 1960 logical px, the app lays its bar and page out to it).
         const id8=!!(this.gpu.screen&&this.gpu.screen.w===2880&&this.gpu.screen.h===960);
-        if(id8){p.scale=Math.floor(Math.min(p.w/1600,p.h/520)*1000)/1000;p.ox=Math.round((p.w-1600*p.scale)/2);p.oy=0;}
-        else{p.scale=p.w/1600;p.ox=0;p.oy=this.browserFullscreen?0:80;}
+        if(id8){p.scale=Math.floor(Math.min(p.w/1600,p.h/520)*1000)/1000;p.ox=0;p.oy=0;this.browserWidth=Math.floor(p.w/p.scale);}
+        else{p.scale=p.w/1600;p.ox=0;p.oy=this.browserFullscreen?0:80;this.browserWidth=1600;}
         p.oyTop=p.oy;p.oyMid=p.oy;p.extra=Math.floor((p.h-p.oy)/p.scale-520);
         this.gpu.place(p);this.recorders.clear();this.lastWords=null;this._layoutChanged();
     };

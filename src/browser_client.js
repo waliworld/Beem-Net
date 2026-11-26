@@ -28,7 +28,7 @@ class BrowserClient extends EventEmitter {
     receive(m){
         if(m.id){const p=this.pending.get(m.id);if(p){clearTimeout(p.timer);this.pending.delete(m.id);m.error?p.reject(new Error(m.error)):p.resolve(m.result||{});}return;}
         if(['ready','tabSelected','navigation','blocked'].includes(m.event))this.cancelController();
-        if(m.event==='viewport'&&m.value){const v=m.value;if(Number.isInteger(v.width)&&Number.isInteger(v.height)&&v.width>0&&v.width<=1280&&v.height>0&&v.height<=720){if(!this.viewport||this.viewport.width!==v.width||this.viewport.height!==v.height||this.viewport.zoom!==v.zoom)this.cancelController();this.viewport=v;}}
+        if(m.event==='viewport'&&m.value){const v=m.value;if(Number.isInteger(v.width)&&Number.isInteger(v.height)&&v.width>0&&v.width<=2560&&v.height>0&&v.height<=1440){if(!this.viewport||this.viewport.width!==v.width||this.viewport.height!==v.height||this.viewport.zoom!==v.zoom)this.cancelController();this.viewport=v;}}
         if(m.event==='media'){
             const fullscreen=!!(m.value&&m.value.fullscreen);if(this.controllerFullscreen!==undefined&&this.controllerFullscreen!==fullscreen)this.cancelController();this.controllerFullscreen=fullscreen;
         }

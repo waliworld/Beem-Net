@@ -153,6 +153,8 @@ def main():
         target.mkdir(parents=True)
         for name in ('app.json', 'main.js', 'chromium_frontend.js'):
             shutil.copyfile(source / name, target / name)
+        if (source / 'icon.png').is_file():        # (the app's own icon: the kit uses it in place of a drawn glyph)
+            shutil.copyfile(source / 'icon.png', target / 'icon.png')
         legacy = {'native_reader.js', 'http_reader.js', 'html_page.js', 'html5_parser.js', 'park_gate.js', 'vehicle_signals.js'}
         for module in (ROOT / 'src').glob('*.js'):
             if module.name not in legacy:

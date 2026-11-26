@@ -4,10 +4,13 @@ function fixture(){
     const calls=[],pipe={send:async(method,params,session)=>{calls.push({method,params,session});return {};}};
     return {browser:Object.assign({pipe,tabs:[{session:'a'},{session:'b'}]},Performance),calls,pipe};
 }
-test('normal pages keep default motion preferences and content blocking is explicitly opt-in',async()=>{
+// Beem-Net: a page is told reduced motion is preferred and is offered the light video codecs (upstream: neither)
+test('pages are asked for less work (light video, reduced motion) and content blocking is explicitly opt-in',async()=>{
     const f=fixture();await f.browser.applyPagePerformance('a');
-    assert.deepEqual(f.calls,[{method:'Network.setBlockedURLs',params:{urls:[]},session:'a'},
-        {method:'Emulation.setEmulatedMedia',params:{features:[]},session:'a'}]);
+    const light=require('../src/browser_performance').LIGHT_MEDIA;
+    assert.deepEqual(f.calls,[{method:'Page.addScriptToEvaluateOnNewDocument',params:{source:light},session:'a'},{method:'Runtime.evaluate',params:{expression:light},session:'a'},
+        {method:'Network.setBlockedURLs',params:{urls:[]},session:'a'},
+        {method:'Emulation.setEmulatedMedia',params:{features:[{name:'prefers-reduced-motion',value:'reduce'}]},session:'a'}]);
     await f.browser.setContentBlocking(true);
     assert(f.calls.slice(-2).every(call=>call.params.urls.some(url=>url.includes('doubleclick.net'))));
     await f.browser.applyPagePerformance('new');assert(f.calls[f.calls.length-2].params.urls.length>0,'Chosen blocking applies to newly opened tabs');

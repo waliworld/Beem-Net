@@ -2,14 +2,17 @@
 const nativeBridge=require('./native_image_bridge');nativeBridge.install();
 const mgu=require('./kit/mgu'),{setImage}=require('./kit/record');
 const Gate=require('./visibility_gate'),Browser=require('./browser_client'),Controller=require('./browser_controller');
-const {BrowserState,inputURL}=require('./browser_state'),icon=require('./browser_icons'),installLayout=require('./browser_layout');
+const {BrowserState,inputURL,ZOOMS}=require('./browser_state'),icon=require('./browser_icons'),installLayout=require('./browser_layout');
 const {BrowserLocale}=require('./browser_locale');
 const VehicleAudio=require('./browser_vehicle_audio');
 const shutdown=require('./browser_shutdown');
 const QR=require('./qr_code');
 const BrowserChrome=require('./browser_chrome');
-const W=1600,H=520,IMAGE=700,QR_IMAGE=701,BAR=58,TABS=42,SIDE=600;
-const C={bg:'#11151b',bar:'#181d25',field:'#252d38',panel:'#1b222c',line:'#343e4c',text:'#f4f6f9',muted:'#a2afc0',accent:'#78bfff'};
+// W: the page's logical width - 1600 as the browser was laid out; wider where the screen is (iDrive 8: 1960),
+// set from the layout before each frame, so the bar, the tabs and the page reach from edge to edge
+let W=1600;const H=520,IMAGE=700,QR_IMAGE=701,BAR=58,TABS=42,SIDE=600;
+// Beem-Net's look: near-black surfaces, one electric blue, round fields
+const C={bg:'#07090d',bar:'#0d1017',field:'#171c27',panel:'#10141c',line:'#1f2633',text:'#f5f7fb',muted:'#8b97ad',accent:'#4f8cff'};
 const displayURL=value=>String(value||'').replace(/^https:\/\//,'').split(/[?#]/)[0];
 mgu.run({async start(ctx){
     const {ui,log}=ctx,store=new BrowserState(ctx.dataDir),gate=new Gate();
@@ -41,7 +44,12 @@ mgu.run({async start(ctx){
         return canvas;
     };
     const activity=()=>{lastAction=Date.now();};
-    const note=message=>{toast=message;toastUntil=Date.now()+3300;};
+    let busyNoted=0;
+    const note=message=>{
+        // (the engine did not answer in time: it is busy. Upstream showed every such timeout - "Runtime.evaluate:
+        // Zeitlimit" - which on a heavy page is one after another)
+        if(/^[A-Za-z]+\.[A-Za-z]+: Zeitlimit$/.test(String(message))){if(Date.now()-busyNoted<60000)return;busyNoted=Date.now();message='Die Seite ist ausgelastet ...';}
+        toast=message;toastUntil=Date.now()+3300;};
     store.onError=note;
     const safe=task=>Promise.resolve().then(typeof task==='function'?task:()=>task).catch(e=>{note(e.message);log.warn(e.message);});
     let promptId='',keyboardAuthId='';
@@ -398,46 +406,58 @@ mgu.run({async start(ctx){
     function confirmPrivacy(label,run,back){privacyConfirmation={label,run,back:back||'privacy'};panel='privacy-confirm';}
     function button(c,x,y,w,h,label,fn,key,options){
         const o=options||{},enabled=o.enabled!==false;
-        if(!o.flat)c.roundRect(x,y,w,h,7,o.primary?'#315d84':C.field);
-        c.text(o.literal?String(label):ascii(label),x+w/2,y+h/2+7,19,enabled?C.text:'#566171',{align:'center',literal:!!o.literal});
+        if(!o.flat)c.roundRect(x,y,w,h,Math.min(14,h/2),o.primary?'#2f6fe6':C.field);
+        c.text(o.literal?String(label):ascii(label),x+w/2,y+h/2+7,19,enabled?C.text:'#414b60',{align:'center',literal:!!o.literal});
         if(enabled)c.target(x,y,w,h,()=>{browser.cancelController();activity();return safe(fn);},key);
         tipLabels[key]=o.tip||label;
     }
+    // Beem-Net's mark, drawn (the app icon's: a globe and what orbits it), s px square at x, y. shift: how far the
+    // caller's page is moved down for rects and text alone (belowTabs), so the lines here follow.
+    function mark(c,x,y,s,shift){
+        const k=s/140,yy=y+(shift||0),cx=x+70*k,cy=yy+70*k;
+        c.roundRect(x+4*k,y+4*k,132*k,132*k,30*k,'#13204a');
+        c.arc(cx,cy,30*k,36*k,0,360,C.accent);
+        c.line(x+40*k,cy,x+100*k,cy,3*k,'#cfe6ff');
+        const m=[];for(let i=0;i<=24;i++){const a=i*Math.PI/12;m.push([cx+Math.sin(a)*14*k,cy-Math.cos(a)*32*k]);}c.polyline(m,3*k,'#cfe6ff');
+        const o=[];for(let i=0;i<=16;i++){const t=i/16,u=1-t;o.push([x+(u*u*u*24+3*u*u*t*44+3*u*t*t*86+t*t*t*113)*k,yy+(u*u*u*94+3*u*u*t*56+3*u*t*t*42+t*t*t*44.5)*k]);}c.polyline(o,4.5*k,'#ffffff');
+        c.circle(x+113*k,yy+44.5*k,8.5*k,'#ffffff');c.circle(x+113*k,yy+44.5*k,4*k,C.accent);
+    }
     function tool(c,x,name,fn,key,enabled,selected){
-        if(selected)c.roundRect(x,7,42,42,7,'#293b4d');
-        icon(c,name,x+21,28,enabled===false?'#566171':selected?C.accent:C.text);
+        if(selected)c.roundRect(x,7,42,42,21,'#16233f');
+        icon(c,name,x+21,28,enabled===false?'#414b60':selected?C.accent:C.text);
         if(enabled!==false)c.target(x,6,42,44,()=>{browser.cancelController();activity();return safe(fn);},key);
         tipLabels[key]=({back:'Zurueck',forward:'Vorwaerts',home:'Startseite',reload:'Neu laden',stop:'Laden abbrechen',star:'Lesezeichen',history:'Verlauf und Lesezeichen',keyboard:'Tastatur',settings:'Einstellungen',expand:'Lesemodus',close:'Browser schliessen'})[name]||name;
     }
     function toolbar(c){
+        const R=W-1600;       // (how much wider than the original layout)
         c.fillRect(0,0,W,BAR,C.bar);c.fillRect(0,BAR-1,W,1,C.line);
         tool(c,8,'back',()=>browser.back(),'back',!!browser.child&&canBack);
         tool(c,56,'forward',()=>browser.forward(),'forward',!!browser.child&&canForward);
         tool(c,104,'home',home,'home',true);
         tool(c,152,loading?'stop':'reload',()=>loading?browser.stopLoading():browser.child?browser.reload():home(),'reload',true);
         const editing=keyboard==='url'||keyboard==='homepage',label=editing?draft:currentURL;
-        c.roundRect(206,8,1044,40,8,editing?'#263f54':C.field);
+        c.roundRect(206,8,1044+R,40,20,editing?'#172846':C.field);if(editing)c.strokeRoundRect(206,8,1044+R,40,20,1.6,C.accent);
         if(!label)icon(c,'search',224,28,C.muted);
-        c.clip(222,12,1008,32);
-        c.text(label?(editing&&label.length>91?label.slice(-91):label):ascii('Adresse oder Suchbegriff'),label?223:244,35,19,label?C.text:C.muted,{literal:true});c.noclip();
-        c.target(206,8,1044,40,()=>editURL('url'),'urlbar');tipLabels.urlbar='Adresse bearbeiten';
-        if(loading)c.fillRect(214,47,140+(Date.now()/14%850),2,C.accent);
-        tool(c,1264,'star',()=>{store.toggleBookmark(currentURL,title);note(store.bookmarked(currentURL)?'Lesezeichen gespeichert':'Lesezeichen entfernt');},'bookmark',!!currentURL,store.bookmarked(currentURL));
-        tool(c,1312,'history',()=>{panel=panel==='library'?null:'library';keyboard=null;webMode=false;listOffset=0;if(ctx.display)ctx.display.focusKey='tgt:'+(panel?'list-'+listTab:'library');},'library',true,panel==='library');
-        if(editable||keyboard==='text')tool(c,1360,'keyboard',()=>keyboard?dismissKeyboard():openText(),'text-keyboard',true,!!keyboard);
-        else tool(c,1360,'cursor',enterPage,'page-control',!!frame&&!landing);
+        c.clip(222,12,1008+R,32);
+        c.text(label?(editing&&label.length>91+R/11?label.slice(-Math.floor(91+R/11)):label):ascii('Adresse oder Suchbegriff'),label?223:244,35,19,label?C.text:C.muted,{literal:true});c.noclip();
+        c.target(206,8,1044+R,40,()=>editURL('url'),'urlbar');tipLabels.urlbar='Adresse bearbeiten';
+        if(loading)c.roundRect(226,46,140+(Date.now()/14%(850+R)),3,1.5,C.accent);
+        tool(c,1264+R,'star',()=>{store.toggleBookmark(currentURL,title);note(store.bookmarked(currentURL)?'Lesezeichen gespeichert':'Lesezeichen entfernt');},'bookmark',!!currentURL,store.bookmarked(currentURL));
+        tool(c,1312+R,'history',()=>{panel=panel==='library'?null:'library';keyboard=null;webMode=false;listOffset=0;if(ctx.display)ctx.display.focusKey='tgt:'+(panel?'list-'+listTab:'library');},'library',true,panel==='library');
+        if(editable||keyboard==='text')tool(c,1360+R,'keyboard',()=>keyboard?dismissKeyboard():openText(),'text-keyboard',true,!!keyboard);
+        else tool(c,1360+R,'cursor',enterPage,'page-control',!!frame&&!landing);
         tipLabels['page-control']='Webseite steuern';
-        tool(c,1408,'settings',()=>{panel=panel==='settings'?null:'settings';keyboard=null;webMode=false;},'settings',true,panel==='settings');
-        tool(c,1456,'expand',()=>{enterPage();reading=true;panel=null;keyboard=null;},'reading',!!frame);
-        tool(c,1514,'close',closeApp,'close',true);
+        tool(c,1408+R,'settings',()=>{panel=panel==='settings'?null:'settings';keyboard=null;webMode=false;},'settings',true,panel==='settings');
+        tool(c,1456+R,'expand',()=>{enterPage();reading=true;panel=null;keyboard=null;},'reading',!!frame);
+        tool(c,1514+R,'close',closeApp,'close',true);
     }
     function tabstrip(c){
-        c.fillRect(0,BAR,W,TABS,'#111820');
+        c.fillRect(0,BAR,W,TABS,'#090b10');
         const width=Math.min(360,Math.floor((W-78)/Math.max(1,tabs.length)));
         tabs.forEach((t,i)=>{
             const x=8+i*width,w=width-6,selected=t.id===activeTab;
-            c.roundRect(x,BAR+3,w,TABS-5,6,selected?'#31485e':'#202936');
-            c.text(((t.loading?'... ':'')+(t.title||displayURL(t.url)||ascii('Neuer Tab'))).slice(0,Math.floor((w-60)/10)),x+14,BAR+27,18,C.text,{literal:true});
+            c.roundRect(x,BAR+4,w,TABS-8,(TABS-8)/2,selected?'#1a2744':'#11151e');
+            c.text(((t.loading?'... ':'')+(t.title||displayURL(t.url)||ascii('Neuer Tab'))).slice(0,Math.floor((w-66)/10)),x+18,BAR+27,18,selected?C.text:C.muted,{literal:true});
             c.target(x,BAR+3,w-39,TABS-5,()=>safe(()=>selectTab(t.id)),'tab-'+t.id);
             icon(c,'close',x+w-20,BAR+21,C.muted);
             c.target(x+w-38,BAR+3,38,TABS-5,()=>safe(()=>closeTab(t.id)),'tab-close-'+t.id);
@@ -456,7 +476,7 @@ mgu.run({async start(ctx){
     }
     function drawVideoControls(c,bottom){
         if(Date.now()>mediaUntil&&!media.paused)return;
-        c.roundRect(320,bottom-112,960,98,12,'#161f2c');
+        c.roundRect(320,bottom-112,960,98,12,'#0e131d');
         const labels=['-10 s',media.paused?'Wiedergabe':'Pause','+10 s',media.muted?'Ton ein':'Stumm','Vollbild verlassen'];
         labels.forEach((label,i)=>button(c,336+i*185,bottom-95,176,44,label,()=>{showMedia();return browser.mediaAction(videoActions[i]);},'video-'+videoActions[i],{primary:i===mediaIndex}));
         const time=s=>Math.floor((s||0)/60)+':'+('0'+Math.floor((s||0)%60)).slice(-2);
@@ -468,8 +488,8 @@ mgu.run({async start(ctx){
         return store.frequent();
     }
     function drawStart(c,bottom){
-        c.text(panel==='library'?'Deine Seiten':'Browser',64,118,38,C.text);
-        c.text('Dein Web. Direkt im iDrive.',65,153,19,C.muted);
+        if(panel==='library'){c.text('Deine Seiten',64,118,38,C.text);c.text('Dein Web. Direkt im iDrive.',65,153,19,C.muted);}
+        else{mark(c,64,78,76,TABS);c.text('Beem-Net',156,122,40,C.text,{literal:true,font:'bold'});c.text('Dein Web. Direkt im iDrive.',157,151,19,C.muted);}
         const tabs=[['frequent','Haeufig besucht'],['bookmarks','Lesezeichen'],['history','Verlauf']];
         tabs.forEach((t,i)=>button(c,64+i*238,181,224,42,t[1],()=>{listTab=t[0];listOffset=0;},'list-'+t[0],{primary:listTab===t[0]}));
         const items=rowsForList();
@@ -478,7 +498,7 @@ mgu.run({async start(ctx){
             c.text('Waehle oben die Adressleiste. Drehen waehlt, Druecken bestaetigt.',65,319,19,C.muted);
             if(listTab==='frequent'){
                 c.text('SCHNELLZUGRIFF',65,380,15,C.muted);
-                [['example.net','https://example.net/'],['Wikipedia','https://de.wikipedia.org/'],['YouTube','https://www.youtube.com/']].forEach((i,n)=>button(c,64+n*340,402,320,62,i[0],()=>navigate(i[1]),'suggestion-'+n));
+                [['Wikipedia','https://www.wikipedia.org/'],['DuckDuckGo','https://duckduckgo.com/'],['YouTube','https://www.youtube.com/']].forEach((i,n)=>button(c,64+n*340,402,320,62,i[0],()=>navigate(i[1]),'suggestion-'+n));
             }
             return;
         }
@@ -507,15 +527,16 @@ mgu.run({async start(ctx){
         button(c,64,214,220,42,'Adresse bearbeiten',()=>editURL('homepage'),'home-edit');
         button(c,298,214,244,42,'Aktuelle Seite',()=>{if(currentURL){store.set('homepage',currentURL);note('Startseite gespeichert');}else note('Zuerst eine Webseite oeffnen');},'home-current');
         button(c,556,214,220,42,'Ohne Startseite',()=>{store.set('homepage','');note('Start ohne feste Seite');},'home-empty');
-        c.fillRect(64,281,keyboard?880:1472,1,C.line);
+        c.fillRect(64,281,keyboard?880:1076,1,C.line);
         c.text('DARSTELLUNG',65,320,15,C.muted);
         c.text('Seitenzoom',65,355,22,C.text);
-        button(c,420,324,210,42,store.data.zoom+' %',()=>{const values=[100,125,150];store.set('zoom',values[(values.indexOf(store.data.zoom)+1)%values.length]);resized='';},'zoom');
+        button(c,420,324,210,42,store.data.zoom+' %',()=>{const values=ZOOMS;store.set('zoom',values[(values.indexOf(store.data.zoom)+1)%values.length]);resized='';},'zoom');
+        button(c,644,324,142,42,store.data.sharp?'Bild: Scharf':'Bild: Schnell',()=>{store.set('sharp',!store.data.sharp);resized='';},'picture',{tip:'Bild: Schnell'});
         button(c,800,324,344,42,'Auf der Seite suchen',openFind,'find-settings',{enabled:!!browser.child});
         c.text('Leiste beim Lesen ausblenden',65,415,22,C.text);
         button(c,620,384,156,42,store.data.autoHide?'Ein':'Aus',()=>store.set('autoHide',!store.data.autoHide),'auto-hide');
         c.text('Controller nach links oder die kleine Leiste oben holt die Bedienung zurueck.',65,462,17,C.muted);
-        if(!keyboard)button(c,1288,bottom-60,246,42,'Fertig',()=>{panel=null;webMode=false;if(ctx.display)ctx.display.focusKey='tgt:settings';activity();},'settings-done',{primary:true});
+        if(!keyboard)button(c,W>1600?W-310:1288,bottom-60,246,42,'Fertig',()=>{panel=null;webMode=false;if(ctx.display)ctx.display.focusKey='tgt:settings';activity();},'settings-done',{primary:true});
     }
     function drawPrivacy(c,bottom){
         c.text('Datenschutz & Logins',64,114,34,C.text);
@@ -636,6 +657,7 @@ mgu.run({async start(ctx){
         button(c,x+204,444,376,44,starting?'Laedt ...':keyboard==='homepage'?'Speichern':keyboard==='text'||keyboard.indexOf('wifi-')===0||keyboard.indexOf('vault-')===0?'Fertig':'Oeffnen',finishKeyboard,'done',{primary:true});
     }
     ctx.loop('MAIN',12,()=>{
+        W=(ctx.display&&ctx.display.browserWidth)||1600;
         const cv=ctx.canvas(W,H).clear(C.bg),bottom=H+cv.extra;
         const hidden=!nativePrompt()&&!findBar&&!panel&&!keyboard&&(media.fullscreen||(!landing&&webMode&&frame&&(reading||(store.data.autoHide&&Date.now()-lastAction>6500))));
         const top=hidden?0:BAR+TABS;tipLabels={};page=null;
@@ -661,11 +683,12 @@ mgu.run({async start(ctx){
         // Waiting for an image before resizing can leave Ozone with no paint
         // and no hit-test surface after navigation.
         if(webSurface&&browser.child&&page){
-            const width=1280,height=Math.max(200,Math.min(720,Math.round(width*page.h/page.w))),zoom=store.data.zoom,key=width+'x'+height+'@'+zoom;
+            // (the picture's width: 960 px by default - a third fewer pixels for the engine to draw and send - or 1280)
+            const width=store.data.sharp?1280:960,height=Math.max(200,Math.min(720,Math.round(width*page.h/page.w))),zoom=Math.round(store.data.zoom*width/1280),key=width+'x'+height+'@'+zoom;   // (the page keeps its layout in the smaller picture: 100 % is 1280 CSS px across either way)
             if(key!==resized&&Date.now()>=resizeRetry){resized=key;safe(async()=>{try{await browser.resize(width,height,zoom);resizeRetry=0;}catch(error){if(resized===key)resized='';resizeRetry=Date.now()+250;throw error;}});}
         }
         if(hidden&&!media.fullscreen){
-            cv.roundRect(12,8,60,28,9,'#202833');icon(cv,'more',42,22,C.text);
+            cv.roundRect(12,8,60,28,9,'#131824');icon(cv,'more',42,22,C.text);
             cv.target(12,8,60,28,()=>{browser.cancelController();webMode=false;reading=false;activity();},'show-toolbar');tipLabels['show-toolbar']='Browserleiste anzeigen';
         }
         if(media.fullscreen&&media.playerMode&&!nativePrompt()&&!panel&&!keyboard&&!media.hasSiteControls)drawVideoControls(cv,bottom);
@@ -675,7 +698,7 @@ mgu.run({async start(ctx){
         if(panel==='remote'&&remoteState&&remoteState.active&&!remoteBusy&&Date.now()-remotePoll>2000){remotePoll=Date.now();safe(async()=>{const s=await browser.request('remoteStatus');if(panel==='remote'){remoteState=s;showQR(s.url);}});}
         const focused=ctx.display&&ctx.display.focusKey,focusedKey=focused&&focused.slice(0,4)==='tgt:'?focused.slice(4):'';
         const hint=Date.now()<toastUntil?toast:storageIssue||!webMode&&!keyboard&&!panel&&!landing&&tipLabels[focusedKey];
-        if(hint&&!media.fullscreen){const w=Math.min(W-32,ascii(hint).length*10+42);cv.roundRect((W-w)/2,bottom-42,w,31,8,'#253243');cv.text(ascii(hint),(W-w)/2+20,bottom-20,17,C.text);}
+        if(hint&&!media.fullscreen){const w=Math.min(W-32,ascii(hint).length*10+42);cv.roundRect((W-w)/2,bottom-42,w,31,8,'#182236');cv.text(ascii(hint),(W-w)/2+20,bottom-20,17,C.text);}
         cv.scroll=false;return ui.image('MAIN_GFX',cv);
     });
     process.once('exit',()=>{locale.close();browser.destroy();});
