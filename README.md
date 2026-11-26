@@ -13,6 +13,17 @@ downloads and the rest - is his work, MIT licensed, and is credited in [CREDITS.
 documentation is kept under [docs/](docs/) ([English overview](docs/UPSTREAM_README.en.md),
 [German](docs/UPSTREAM_README.de.md)).
 
+| | |
+|---|---|
+| ![A page](docs/media/id8-page.png) | ![Scrolled](docs/media/id8-page-scrolled.png) |
+| A page in Beem-Net on the iDrive 8 screen: the bar, the tabs, the page | Scrolled with a finger |
+| ![After a tap](docs/media/id8-page-second.png) | |
+| A tap on the page's link opened the next page | |
+
+These are not photos of a car. They are made on a computer by `test/id8/e2e_local.js`: the built app on a simulated
+2880 x 960 iDrive 8 screen, the real backend and the real Chromium engine from the release, loading a demo page
+from a local web server; the scroll and the tap in them were sent as touches. A photo from a car will replace them.
+
 ## What Beta 1 is for
 
 One question: **does the browser run on an iDrive 8 head unit at all?**
@@ -62,6 +73,12 @@ sha256 on the way.
     python3 tools/id8_release.py --kit kit-checkout        # dist/release/
 
 `tools/build_store.py` refuses to run as root.
+
+**End to end** (the real engine): unpack the engine package to `/var/opt/mgu-browser-engine/versions/0.1.0/` (its
+Chromium is linked to that path), start `dev/backend.js` as an unprivileged user as upstream's
+[development notes](docs/DEVELOPMENT.md) describe, then
+`node test/id8/e2e_local.js <stage of build_store.py --keep-stage> <the backend's socket>`. It checks that a page
+arrives as a picture, that a finger scrolls it and that a tap on a link opens the next page.
 
 ## Credits and licence
 
