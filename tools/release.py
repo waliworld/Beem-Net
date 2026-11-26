@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""Beem-Net's iDrive 8 release: dist/release/ with catalog.json and the three packages the MGU Store installs.
+"""Beem-Net's release for iDrive 7 and iDrive 8: dist/release/ with catalog.json and the three packages the MGU
+Store installs.
 
   the app      built here from this repository (tools/build_store.py, the public kit that knows iDrive 8)
   the runtime  upstream's published package (pllanaio/mgu-browser 0.16.1: its tested files and native helpers,
                byte for byte) with this repository's runtime/setup.js - how the app's uid is found on iDrive 8 -
-               and "mguHmi": ["ID8"]
-  the engine   upstream's published Chromium package, byte for byte, with "mguHmi": ["ID8"]
+               "mguHmi": ["ID7", "ID8"] and Beem-Net's own version number (in component.json and build-provenance.json,
+               the two places the runtime reads it)
+  the engine   upstream's published Chromium package, byte for byte, with "mguHmi": ["ID7", "ID8"]. Its version stays
+               0.1.0: its Chromium is linked to the folder of that version
 
-Upstream's packages say "ID7" in their own component.json, which the head unit's installer refuses on iDrive 8;
+Upstream's packages say "ID7" only in their own component.json, which the head unit's installer refuses on iDrive 8;
 nothing else about them is changed. Each is fetched by its address and checked by its sha256 first.
 
-  python3 tools/id8_release.py --kit <checkout of the public kit at build_store.KIT_COMMIT> [--base <url/>] [--cache <dir>]
+  python3 tools/release.py --kit <checkout of the public kit at build_store.KIT_COMMIT> [--base <url/>] [--cache <dir>]
 """
 import argparse
 import gzip
@@ -31,7 +34,10 @@ RUNTIME = ('v0.16.1/mgu-browser%400.16.1.tgz', 'dac91634fe5ff877913b66add4205895
 ENGINE = ('v0.10.0/mgu-browser-engine%400.1.0.tgz', '0b6a73c964354214262d01f2d9bec2d0ab253cac8d27de04708912e804ef0874')
 # the runtime's files this repository changes for iDrive 8 (the package's path -> the repository's)
 RUNTIME_OURS = {'runtime/setup.js': 'runtime/setup.js'}
-REQUIRES_APP = {'mgu-browser': '0.16.1', 'mgu-browser-engine': '0.1.0', 'mgu-uplink': '0.7.3', 'mgu-render': '0.6.11', 'mgu-deploy': '0.7.17'}
+# Beem-Net's own version line for the app and the runtime (upstream's are 0.x under the same ids)
+VERSION = '1.0.0'
+HMI = ['ID7', 'ID8']
+REQUIRES_APP = {'mgu-browser': VERSION, 'mgu-browser-engine': '0.1.0', 'mgu-uplink': '0.7.3', 'mgu-render': '0.6.11', 'mgu-deploy': '0.7.17'}
 
 
 def sha(data):
@@ -61,9 +67,11 @@ def repack(source, target, change, replace=None):
             raise SystemExit(source.name + ': component.json is not its first member')
         component = json.loads(old.extractfile(members[0]).read().decode('utf-8'))
         listed = {f['path']: f for f in component.get('files', [])}
-        for path, data in replace.items():
+        for path, data in list(replace.items()):
             if path not in listed:
                 raise SystemExit(source.name + ': has no file ' + path)
+            if callable(data):       # (made from the package's own file)
+                data = replace[path] = data(old.extractfile('files/' + path).read())
             listed[path]['sha256'] = sha(data)
         change(component)
         text = (json.dumps(component, indent=2) + '\n').encode('utf-8')
@@ -94,7 +102,7 @@ def repack(source, target, change, replace=None):
 def entry(component, artifact, base, extra=None):
     data = artifact.read_bytes()
     out = {'id': component['id'], 'kind': component.get('kind', 'tool'), 'version': component['version'], 'title': component['title'],
-           'mguHmi': ['ID8'], 'artifact': {'name': artifact.name, 'size': len(data), 'sha256': sha(data), 'url': base + artifact.name},
+           'mguHmi': HMI, 'artifact': {'name': artifact.name, 'size': len(data), 'sha256': sha(data), 'url': base + artifact.name},
            'requires': component.get('requires', {}), 'uninstallable': True}
     out.update(extra or {})
     return out
@@ -113,17 +121,29 @@ def main():
         shutil.rmtree(out)
     out.mkdir(parents=True)
 
-    def id8(title):
+    def ours(title, version=None):
         def change(component):
-            component['mguHmi'] = ['ID8']
+            component['mguHmi'] = HMI
             component['title'] = title
+            if version:
+                component['version'] = version
         return change
 
-    ours = {path: (ROOT / local).read_bytes() for path, local in RUNTIME_OURS.items()}
-    runtime = repack(fetch(RUNTIME, cache), out / 'mgu-browser@0.16.1.tgz', id8('Beem-Net runtime (experimental, iDrive 8)'), ours)
-    engine = repack(fetch(ENGINE, cache), out / 'mgu-browser-engine@0.1.0.tgz', id8('Beem-Net Chromium engine (experimental, iDrive 8)'))
+    def provenance(data):
+        made = json.loads(data.decode('utf-8'))
+        made['version'] = VERSION
+        made['beemNet'] = 'upstream 0.16.1 with runtime/setup.js of waliworld/Beem-Net'
+        return (json.dumps(made, indent=2) + '\n').encode('utf-8')
+
+    changed = {path: (ROOT / local).read_bytes() for path, local in RUNTIME_OURS.items()}
+    changed['build-provenance.json'] = provenance
+    runtime_file = out / ('mgu-browser@' + VERSION + '.tgz')
+    runtime = repack(fetch(RUNTIME, cache), runtime_file, ours('Beem-Net runtime (experimental)', VERSION), changed)
+    engine = repack(fetch(ENGINE, cache), out / 'mgu-browser-engine@0.1.0.tgz', ours('Beem-Net Chromium engine (experimental)'))
 
     spec = json.loads((ROOT / 'apps' / 'mgu_browser' / 'app.json').read_text(encoding='utf-8'))
+    if spec['version'] != VERSION:
+        raise SystemExit('apps/mgu_browser/app.json is not version ' + VERSION)
     stage = ROOT / 'build' / 'app-out'
     if stage.exists():
         shutil.rmtree(stage)
@@ -136,10 +156,10 @@ def main():
 
     components = [
         entry({'id': spec['id'], 'kind': 'app', 'version': spec['version'], 'title': 'Beem-Net (experimental)', 'requires': REQUIRES_APP}, app, args.base,
-              {'description': 'An internet browser for iDrive 8: a real Chromium on the head unit, its picture in the app, touch on the page. '
-                              'Experimental: picture and touch first; sound and video are not qualified on iDrive 8 yet. Based on MGU Browser by Leon Pllana.',
+              {'description': 'An internet browser for iDrive 7 and iDrive 8: a real Chromium on the head unit, its picture in the app, touch on the page. '
+                              'Experimental. iDrive 8: picture and touch; sound and smooth video are not there yet. iDrive 7: as upstream MGU Browser 0.16.1. Based on MGU Browser by Leon Pllana.',
                'author': 'Waliworld #tunedbywali, on MGU Browser by Leon Pllana'}),
-        entry(runtime, out / 'mgu-browser@0.16.1.tgz', args.base, {'author': 'Leon Pllana; iDrive 8 changes by Waliworld'}),
+        entry(runtime, runtime_file, args.base, {'author': 'Leon Pllana; iDrive 8 changes by Waliworld'}),
         entry(engine, out / 'mgu-browser-engine@0.1.0.tgz', args.base, {'author': 'Leon Pllana'}),
     ]
     (out / 'catalog.json').write_text(json.dumps({'schema': 2, 'components': components}, indent=2) + '\n', encoding='utf-8')

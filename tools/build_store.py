@@ -169,7 +169,7 @@ def main():
         package = work / 'dist' / args.app / 'source'
         manifest = package / 'package.json'
         metadata = json.loads(manifest.read_text(encoding='utf-8'))
-        metadata['mguHmi'] = ['ID8']   # Beem-Net: the iDrive 8 build (upstream's own is the iDrive 7 one)
+        metadata['mguHmi'] = ['ID7', 'ID8']   # Beem-Net: one package for both (the kit builds each unit's screen description)
         metadata['license'] = 'MIT'
         manifest.write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
         if args.release_package:
